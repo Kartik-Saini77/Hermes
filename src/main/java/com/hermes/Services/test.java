@@ -38,7 +38,7 @@ public class test {
     }
 
     @Async
-    public CompletableFuture<List<UserDetails>> findAll() {
-        return userDb.findByEmailAndPassword("dfsa@gmadsgfa","1234");
+    public CompletableFuture<List<UserDetails>> findByEmail() {
+        return userDb.findByEmail("dfsa@gmadsgfa");
     }
 }

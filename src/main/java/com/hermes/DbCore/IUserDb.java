@@ -14,6 +14,6 @@ import java.util.concurrent.CompletableFuture;
 public interface IUserDb extends MongoRepository<UserDetails, String> {
 
     @Async
-    @Query("{'email': ?0, 'password': ?1}")
-    CompletableFuture<List<UserDetails>> findByEmailAndPassword(String email, String password);
+    @Query("{'email': ?0}")
+    CompletableFuture<List<UserDetails>> findByEmail(String email);
 }
