@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api")
@@ -22,8 +23,13 @@ public class testController {
 
     @GetMapping("/saveUser")
     public ResponseEntity<UserDetails> saveUser() throws HermesError {
-        return ResponseEntity.ok(testService.saveUser());
-//        throw new HermesError("User not found", 404);
+        try {
+            return ResponseEntity.ok(testService.saveUser().get());
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new HermesError("User not found", 404);
+        }
+
     }
 
     @GetMapping("/test")
