@@ -1,8 +1,7 @@
 package com.hermes.Models;
 
-import com.mongodb.lang.Nullable;
+import com.hermes.Models.Enums.Country;
 import org.bson.codecs.pojo.annotations.BsonProperty;
-import org.springframework.data.mongodb.core.mapping.Unwrapped;
 
 import java.util.UUID;
 
@@ -19,11 +18,12 @@ public class UserDetails extends User {
     @BsonProperty("dob")
     public String dob;
 
-    public enum Country{
-        INDIA,PAKISTAN,IRAN,RUSSIA,CHINA,NORTH_KORIA,USA,UK
-    }
-
     public UserDetails() {
         this.id = UUID.randomUUID().toString();
     }
+    public static UserDetails RedactUserDetails(UserDetails user){
+        user.password = "[REDACTED]";
+        return user;
+    }
 }
+
