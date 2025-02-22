@@ -20,7 +20,7 @@ public class User {
     @BsonProperty("createdAt")
     public Instant createdAt;
     @BsonProperty("isVerified")
-    public boolean isVerified;
+    public boolean isVerified=false;
 
     public enum Role{
         USER,MODERATOR,ADMIN

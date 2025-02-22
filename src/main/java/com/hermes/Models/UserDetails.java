@@ -14,7 +14,7 @@ public class UserDetails extends User {
     @BsonProperty("username")
     public String username;
     @BsonProperty("country")
-    public Country country;
+    public Country country=Country.INDIA;
     @BsonProperty("dob")
     public String dob;
 
