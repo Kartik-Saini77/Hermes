@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,12 +14,19 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(HermesError.class)
-    public ResponseEntity<Object> handleCustomException(HermesError ex, WebRequest request) {
+    public ResponseEntity<Object> handleCustomException(HermesError hermesError, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("status", ex.getStatusCode());
-        body.put("error", ex.getMessage());
+        body.put("status", hermesError.getStatusCode());
+        body.put("error", hermesError.getMessage());
 
-        return new ResponseEntity<>(body, HttpStatus.valueOf(ex.getStatusCode()));
+        HttpStatus status = switch (hermesError.getStatusCode()) {
+            case HermesError.RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case HermesError.BAD_REQUEST -> HttpStatus.BAD_REQUEST;
+            case HermesError.FORBIDDEN -> HttpStatus.FORBIDDEN;
+            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+
+        return new ResponseEntity<>(body, status);
     }
 
     @ExceptionHandler(Exception.class)
