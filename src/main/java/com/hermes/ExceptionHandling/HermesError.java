@@ -5,6 +5,7 @@ public class HermesError extends RuntimeException {
     public static final int RESOURCE_NOT_FOUND = 4004;
     public static final int BAD_REQUEST = 4000;
     public static final int FORBIDDEN = 4003;
+    public static final int INTERNAL_SERVER_ERROR = 5000;
 
     public HermesError(String message, int statusCode) {
         super(message);

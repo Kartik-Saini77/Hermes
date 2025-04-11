@@ -6,6 +6,8 @@ import com.hermes.Services.Auth.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1.0")
 public class UserController {
@@ -18,13 +20,11 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<String> saveUser(@RequestBody RegistrationInteraction registrationInteraction) throws Exception {
-//       return ResponseEntity.ok("Registration Success : "+registrationInteraction.email);
        return ResponseEntity.ok(authService.register(registrationInteraction).get());
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody UserDetailsInteraction userDetailsInteraction) throws Exception {
-       return ResponseEntity.ok("Login Success");
-//        return ResponseEntity.ok(authService.login(userDetailsInteraction).get());
+    public ResponseEntity<Map<String, Object>> login(@RequestBody UserDetailsInteraction userDetailsInteraction) throws Exception {
+        return ResponseEntity.ok(authService.login(userDetailsInteraction).get());
     }
 }

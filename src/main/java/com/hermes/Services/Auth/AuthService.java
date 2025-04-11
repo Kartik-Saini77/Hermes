@@ -7,11 +7,17 @@ import com.hermes.Models.Interaction.UserDetailsInteraction;
 import com.hermes.Models.UserDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -19,9 +25,14 @@ import java.util.concurrent.CompletableFuture;
 public class AuthService  {
     private final IUserDb userDBService;
     private final Logger _logger = LoggerFactory.getLogger(getClass());
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+//    private final JwtUtils jwtUtils;
 
-    public AuthService(IUserDb userDBService) {
+    public AuthService(IUserDb userDBService, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
         this.userDBService = userDBService;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
     }
 
     @Async
@@ -34,7 +45,7 @@ public class AuthService  {
 
             var userDetails=new UserDetails();
             userDetails.setEmail(registrationInteraction.email);
-            userDetails.setPassword(registrationInteraction.password); // new BCryptPasswordEncoder(10).encode(registrationInteraction.password);
+            userDetails.setPassword(passwordEncoder.encode(registrationInteraction.password)); // new BCryptPasswordEncoder(10).encode(registrationInteraction.password);
             userDetails.setFirstName(registrationInteraction.firstName);
             userDetails.setLastName(registrationInteraction.lastName);
             userDetails.setCountry(registrationInteraction.country);
@@ -46,10 +57,32 @@ public class AuthService  {
             userDBService.save(userDetails);
             return CompletableFuture.completedFuture("Registered Successfully");
         } catch (HermesError e) {
-            _logger.info("Failed to Register ERROR: {}", e.getMessage());
+            _logger.error("Failed to Register ERROR: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            _logger.info("Internal Server Error : {}", e.getMessage());
+            _logger.error("Internal Server Error in register() : {}", e.getMessage());
+            throw new Exception("Internal Server Error");
+        }
+    }
+
+    @Async
+    public CompletableFuture<Map<String, Object>> login(UserDetailsInteraction userDetailsInteraction) throws Exception {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(userDetailsInteraction.emailOrUsername, userDetailsInteraction.password)
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+//            String jwt = jwtUtils.generateJwtToken(authentication);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", "jwt");
+            return CompletableFuture.completedFuture(response);
+        } catch (AuthenticationException e) {
+            _logger.info("Failed to Login ERROR: {}", e.getMessage());
+            throw new HermesError("Bad credentials", HermesError.RESOURCE_NOT_FOUND);
+        } catch (Exception e) {
+            _logger.error("Internal Server Error in login() : {}", e.getMessage());
             throw new Exception("Internal Server Error");
         }
     }
