@@ -28,11 +28,6 @@ public class UserDetails extends User {
         super();
     }
 
-    public static UserDetails RedactUserDetails(UserDetails user){
-        user.setPassword("[REDACTED]");
-        return user;
-    }
-
     public String getId() {
         return id;
     }

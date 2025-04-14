@@ -4,14 +4,14 @@ import com.hermes.DbCore.IUserDb;
 import com.hermes.ExceptionHandling.HermesError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -35,7 +35,7 @@ public class UserService implements UserDetailsService {
             return new User(
                     userDetails.getEmail(),
                     userDetails.getPassword(),
-                    new ArrayList<>()
+                    List.of(new SimpleGrantedAuthority(userDetails.getRole().toString()))
             );
         } catch (HermesError e) {
             _logger.error("Error fetching user: {}", e.getMessage());

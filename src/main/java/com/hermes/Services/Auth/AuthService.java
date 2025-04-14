@@ -12,10 +12,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -27,12 +31,13 @@ public class AuthService  {
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final BCryptPasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-//    private final JwtUtils jwtUtils;
+    private final JwtEncoder jwtEncoder;
 
-    public AuthService(IUserDb userDBService, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+    public AuthService(IUserDb userDBService, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtEncoder jwtEncoder) {
         this.userDBService = userDBService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.jwtEncoder = jwtEncoder;
     }
 
     @Async
@@ -72,11 +77,21 @@ public class AuthService  {
                     new UsernamePasswordAuthenticationToken(userDetailsInteraction.emailOrUsername, userDetailsInteraction.password)
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-//            String jwt = jwtUtils.generateJwtToken(authentication);
+            var claims = JwtClaimsSet.builder()
+                    .subject(userDetailsInteraction.emailOrUsername)
+                    .issuer("hermes")
+                    .claim("roles", authentication.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .toList())
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plusSeconds(60))
+                    .build();
+
+            JwtEncoderParameters parameters = JwtEncoderParameters.from(claims);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("token", "jwt");
+            response.put("token", jwtEncoder.encode(parameters).getTokenValue());
+//            _logger.warn(claims.getClaim("roles").toString());
             return CompletableFuture.completedFuture(response);
         } catch (AuthenticationException e) {
             _logger.info("Failed to Login ERROR: {}", e.getMessage());
