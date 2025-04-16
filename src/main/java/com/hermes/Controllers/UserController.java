@@ -27,4 +27,9 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> login(@RequestBody UserDetailsInteraction userDetailsInteraction) throws Exception {
         return ResponseEntity.ok(authService.login(userDetailsInteraction).get());
     }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<Map<String, Object>> refreshToken(@RequestBody Map<String, String> request) throws Exception {
+        return ResponseEntity.ok(authService.refreshToken(request).get());
+    }
 }

@@ -4,9 +4,11 @@ import com.hermes.DbCore.IUserDb;
 import com.hermes.ExceptionHandling.HermesError;
 import com.hermes.Models.Interaction.RegistrationInteraction;
 import com.hermes.Models.Interaction.UserDetailsInteraction;
+import com.hermes.Models.RefreshToken;
 import com.hermes.Models.UserDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,12 +34,17 @@ public class AuthService  {
     private final BCryptPasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtEncoder jwtEncoder;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthService(IUserDb userDBService, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtEncoder jwtEncoder) {
+    @Value("${jwt.token-expiration}")
+    private long ACCESS_TOKEN_VALIDITY;
+
+    public AuthService(IUserDb userDBService, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtEncoder jwtEncoder, RefreshTokenService refreshTokenService) {
         this.userDBService = userDBService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtEncoder = jwtEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Async
@@ -77,21 +84,13 @@ public class AuthService  {
                     new UsernamePasswordAuthenticationToken(userDetailsInteraction.emailOrUsername, userDetailsInteraction.password)
             );
 
-            var claims = JwtClaimsSet.builder()
-                    .subject(userDetailsInteraction.emailOrUsername)
-                    .issuer("hermes")
-                    .claim("roles", authentication.getAuthorities().stream()
-                            .map(GrantedAuthority::getAuthority)
-                            .toList())
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(60))
-                    .build();
-
-            JwtEncoderParameters parameters = JwtEncoderParameters.from(claims);
+            String accessToken = generateAccessToken(authentication);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(authentication.getName()).get();
 
             Map<String, Object> response = new HashMap<>();
-            response.put("token", jwtEncoder.encode(parameters).getTokenValue());
-//            _logger.warn(claims.getClaim("roles").toString());
+            response.put("accessToken", accessToken);
+            response.put("refreshToken", refreshToken.getToken());
+            response.put("expiresIn", ACCESS_TOKEN_VALIDITY);
             return CompletableFuture.completedFuture(response);
         } catch (AuthenticationException e) {
             _logger.info("Failed to Login ERROR: {}", e.getMessage());
@@ -102,22 +101,43 @@ public class AuthService  {
         }
     }
 
-//    @Async
-//    public CompletableFuture<String> login(UserDetailsInteraction userDetailsInteraction) throws Exception {
-//        try {
-//            var email=userDetailsInteraction.email;
-//            var result=userDBService.findByEmail(email);
-//            if(result==null || result.get().isEmpty()) {
-//                throw new HermesError("User Not Found",HermesError.RESOURCE_NOT_FOUND);
-//            }
-//            //TODO: Check IsVerified
-//            if(!new BCryptPasswordEncoder(10).encode(userDetailsInteraction.password).equals(result.get().getFirst().getPassword())) {
-//                throw new HermesError("Invalid Credentials",HermesError.RESOURCE_NOT_FOUND);
-//            }
-//            return CompletableFuture.completedFuture("Login Success");
-//        } catch (HermesError e) {
-//            _logger.info("Failed to Login ERROR: {}", e.getMessage());
-//            throw e;
-//        }
-//    }
+    @Async
+    public CompletableFuture<Map<String, Object>> refreshToken(Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        if (refreshToken == null) {
+            throw new HermesError("Refresh token is required", HermesError.BAD_REQUEST);
+        }
+        return refreshTokenService.verifyRefreshToken(refreshToken)
+                .thenCompose(token -> userDBService.findByEmailOrPublicUsername(token.getUserId())
+                        .thenApply(users -> {
+                            if (users.isEmpty()) {
+                                throw new HermesError("User not found", HermesError.RESOURCE_NOT_FOUND);
+                            }
+                            return users.getFirst();
+                        }))
+                .thenApply(user -> {
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(
+                            user.getPublicUsername(), user.getPassword()
+                    );
+                    String newAccessToken = generateAccessToken(authentication);
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("accessToken", newAccessToken);
+                    response.put("expiresIn", ACCESS_TOKEN_VALIDITY);
+                    return response;
+                });
+    }
+
+    private String generateAccessToken(Authentication authentication) {
+        var claims = JwtClaimsSet.builder()
+                .subject(authentication.getName())
+                .issuer("hermes")
+                .claim("roles", authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .toList())
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(ACCESS_TOKEN_VALIDITY))
+                .build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    }
 }

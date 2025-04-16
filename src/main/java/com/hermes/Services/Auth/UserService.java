@@ -1,4 +1,4 @@
-package com.hermes.Services;
+package com.hermes.Services.Auth;
 
 import com.hermes.DbCore.IUserDb;
 import com.hermes.ExceptionHandling.HermesError;
@@ -33,7 +33,7 @@ public class UserService implements UserDetailsService {
             com.hermes.Models.UserDetails userDetails = users.getFirst();
 
             return new User(
-                    userDetails.getEmail(),
+                    userDetails.getPublicUsername(),
                     userDetails.getPassword(),
                     List.of(new SimpleGrantedAuthority(userDetails.getRole().toString()))
             );
