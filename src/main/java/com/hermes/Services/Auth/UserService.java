@@ -33,7 +33,7 @@ public class UserService implements UserDetailsService {
             com.hermes.Models.UserDetails userDetails = users.getFirst();
 
             return new User(
-                    userDetails.getPublicUsername(),
+                    userDetails.getUserId(),
                     userDetails.getPassword(),
                     List.of(new SimpleGrantedAuthority(userDetails.getRole().toString()))
             );

@@ -57,7 +57,7 @@ public class AuthService  {
 
             var userDetails=new UserDetails();
             userDetails.setEmail(registrationInteraction.email);
-            userDetails.setPassword(passwordEncoder.encode(registrationInteraction.password)); // new BCryptPasswordEncoder(10).encode(registrationInteraction.password);
+            userDetails.setPassword(passwordEncoder.encode(registrationInteraction.password));
             userDetails.setFirstName(registrationInteraction.firstName);
             userDetails.setLastName(registrationInteraction.lastName);
             userDetails.setCountry(registrationInteraction.country);
@@ -90,7 +90,6 @@ public class AuthService  {
             Map<String, Object> response = new HashMap<>();
             response.put("accessToken", accessToken);
             response.put("refreshToken", refreshToken.getToken());
-            response.put("expiresIn", ACCESS_TOKEN_VALIDITY);
             return CompletableFuture.completedFuture(response);
         } catch (AuthenticationException e) {
             _logger.info("Failed to Login ERROR: {}", e.getMessage());
@@ -105,19 +104,21 @@ public class AuthService  {
     public CompletableFuture<Map<String, Object>> refreshToken(Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
         if (refreshToken == null) {
+            _logger.error("Refresh token is required for token refresh");
             throw new HermesError("Refresh token is required", HermesError.BAD_REQUEST);
         }
         return refreshTokenService.verifyRefreshToken(refreshToken)
-                .thenCompose(token -> userDBService.findByEmailOrPublicUsername(token.getUserId())
+                .thenCompose(token -> userDBService.findByUserId(token.getUserId())
                         .thenApply(users -> {
                             if (users.isEmpty()) {
+                                _logger.error("User not found for refresh token");
                                 throw new HermesError("User not found", HermesError.RESOURCE_NOT_FOUND);
                             }
                             return users.getFirst();
                         }))
                 .thenApply(user -> {
                     Authentication authentication = new UsernamePasswordAuthenticationToken(
-                            user.getPublicUsername(), user.getPassword()
+                            user.getUserId(), user.getPassword()
                     );
                     String newAccessToken = generateAccessToken(authentication);
                     Map<String, Object> response = new HashMap<>();

@@ -18,4 +18,7 @@ public interface IUserDb extends MongoRepository<UserDetails, String> {
     @Async
     @Query("{ '$or' : [ { 'email' : ?0 }, { 'publicUsername' : ?0 } ] }")
     CompletableFuture<List<UserDetails>> findByEmailOrPublicUsername(String emailOrUsername);
+
+    @Async
+    CompletableFuture<List<UserDetails>> findByUserId(String username);
 }
