@@ -1,2 +1,2 @@
 # Hermes
-Backend for a dumb project
+Backend for Thryve in Spring Boot

@@ -1,11 +1,14 @@
 package com.hermes.Models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hermes.Models.Enums.Country;
 import com.hermes.Models.Enums.Gender;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Document(collection = "UsersDb")
@@ -22,7 +25,7 @@ public class UserDetails extends User {
     @BsonProperty("country")
     private Country country;
     @BsonProperty("dob")
-    private String dob;
+    public LocalDate dob;
 
     public UserDetails() {
         super();
@@ -68,11 +71,11 @@ public class UserDetails extends User {
         this.country = country;
     }
 
-    public String getDob() {
+    public LocalDate getDob() {
         return dob;
     }
 
-    public void setDob(String dob) {
+    public void setDob(LocalDate dob) {
         this.dob = dob;
     }
 
