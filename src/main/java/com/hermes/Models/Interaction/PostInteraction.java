@@ -17,6 +17,9 @@ public class PostInteraction {
     @JsonProperty("postTags")
     public List<String> postTags;
 
+    @JsonProperty("authorUserId")
+    private String authorUserId;
+
     @JsonProperty("communityId")
     public String communityId;
 }
