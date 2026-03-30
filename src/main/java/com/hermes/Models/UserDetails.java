@@ -1,7 +1,5 @@
 package com.hermes.Models;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hermes.Models.Enums.Country;
 import com.hermes.Models.Enums.Gender;
 import org.bson.codecs.pojo.annotations.BsonProperty;
@@ -9,7 +7,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Document(collection = "UsersDb")
 public class UserDetails extends User {
@@ -98,4 +95,3 @@ public class UserDetails extends User {
                 '}';
     }
 }
-
